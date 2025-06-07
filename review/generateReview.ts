@@ -5,7 +5,7 @@ dotenv.config()
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function generateReview(diff: string): Promise<string> {
-  const prompt = `You are a senior software engineer. Review this diff for potential bugs, security issues, or improvements:\n\n${diff}`;
+  const prompt = `You are a senior software engineer. Review this diff for potential bugs, security issues, or improvements. Please do this file by file. If the file does not have any issues, leave it.:\n\n${diff}`;
   const res = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages: [{ role: "user", content: prompt }],
