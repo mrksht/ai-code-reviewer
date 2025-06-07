@@ -10,7 +10,11 @@ export async function handleGitLabWebhook(req: Request, res: Response) {
 
   const mr = body.merge_request;
   const diffUrl = `${mr.url}.diff`;
-  const notesUrl = body.object_attributes.noteable_url + "/notes";
+
+  const projectId = body.project_id;
+  const mrIid = mr.iid;
+
+  const notesUrl = `https://gitlab.com/api/v4/projects/${projectId}/merge_requests/${mrIid}/notes`;
 
   const diffRes = await axios.get(diffUrl, {
     headers: { "PRIVATE-TOKEN": process.env.GITLAB_TOKEN }
