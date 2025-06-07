@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import axios from "axios";
-import { generateReview } from "../review/generateReview.js";
+import { generateReview } from "../review/generateReview";
 
 export async function handleGitLabWebhook(req: Request, res: Response) {
   const body = req.body;
