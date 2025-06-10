@@ -1,13 +1,24 @@
 import OpenAI from "openai";
-import dotenv from "dotenv"
-dotenv.config()
+import dotenv from "dotenv";
+dotenv.config();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function generateReview(diff: string): Promise<string> {
-  const prompt = `You are a senior software engineer. Review this diff for potential bugs, security issues, or improvements. Please do this file by file. If the file does not have any issues, leave it.:\n\n${diff}`;
+  const prompt = `You are a senior TypeScript engineer. Analyze the following code diff for issues in code quality.
+
+Look for:
+- Loose or unsafe types
+- Opportunities for better data flow and structure
+- Redundant or overloaded functions
+- Type safety improvements
+- General refactoring suggestions
+
+Here is the code diff:
+${diff}`;
+
   const res = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo",
+    model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.3,
   });
