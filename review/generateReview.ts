@@ -18,7 +18,7 @@ Here is the code diff:
 ${diff}`;
 
   const res = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-4",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.3,
   });
