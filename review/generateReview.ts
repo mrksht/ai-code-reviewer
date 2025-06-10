@@ -13,12 +13,13 @@ Look for:
 - Redundant or overloaded functions
 - Type safety improvements
 - General refactoring suggestions
+- Only check in src folder and do not worry about tests folder and localization folder in src
 
 Here is the code diff:
 ${diff}`;
 
   const res = await openai.chat.completions.create({
-    model: "gpt-4",
+    model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.3,
   });
