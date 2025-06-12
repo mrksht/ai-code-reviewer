@@ -67,7 +67,8 @@ If no issues are found, set hasIssues to false and provide an empty issues array
     }
 
     try {
-      const parsed = JSON.parse(content);
+      const cleanedContent = content.replace(/```json\n?|```/g, '').trim();
+      const parsed = JSON.parse(cleanedContent);
       const lineComments: LineComment[] = parsed.issues?.map((issue: any) => ({
         line: issue.line || 0,
         comment: issue.message,
