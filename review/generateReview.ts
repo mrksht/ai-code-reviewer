@@ -1,7 +1,6 @@
 import dotenv from "dotenv"
 dotenv.config()
 
-// These interfaces remain the same as they define the expected output structure.
 export interface FileReview {
   filePath: string;
   hasIssues: boolean;
@@ -25,7 +24,6 @@ export async function generateReview(diff: any): Promise<FileReview> {
   const filePath = diff.new_path || diff.old_path;
   const diffContent = diff.diff;
 
-  // The system instruction sets the persona for the model.
   const systemPrompt = `You are a senior software engineer reviewing code changes. 
   
 Analyze this diff for file: ${filePath}
@@ -42,11 +40,8 @@ Please review for:
 
   console.log(`Reviewing file: ${filePath}`);
 
-  // The API key is left as an empty string. The environment will provide this.
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
-  // This is the schema we expect the model to return. This is crucial for getting a
-  // reliable JSON response.
   const responseSchema = {
     type: "OBJECT",
     properties: {
@@ -69,15 +64,11 @@ Please review for:
 
   try {
     const payload = {
-      // The prompt is sent to the model as a user message.
       contents: [{ parts: [{ text: systemPrompt }] }],
-      // This configuration tells the model to return a structured JSON object
-      // that adheres to the defined schema.
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: responseSchema,
       },
-      // You can also add a system instruction to set the model's persona more formally.
       systemInstruction: {
         parts: [{ text: "You are a world-class code reviewer. Provide concise, actionable feedback." }]
       }
@@ -104,7 +95,6 @@ Please review for:
       };
     }
 
-    // The Gemini API returns the JSON as a string, so we need to parse it.
     const parsed = JSON.parse(content);
 
     const lineComments: LineComment[] = parsed.issues?.map((issue: any) => ({
