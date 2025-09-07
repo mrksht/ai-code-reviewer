@@ -1,8 +1,7 @@
-import OpenAI from "openai";
 import dotenv from "dotenv"
 dotenv.config()
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// These interfaces remain the same as they define the expected output structure.
 export interface FileReview {
   filePath: string;
   hasIssues: boolean;
@@ -16,12 +15,19 @@ export interface LineComment {
   severity: 'info' | 'warning' | 'error';
 }
 
+/**
+ * Generates a code review for a given diff using the Gemini API.
+ * The function constructs a prompt and a response schema to ensure a structured JSON output.
+ * @param diff The code diff object containing new_path and diff content.
+ * @returns A promise that resolves to a FileReview object.
+ */
 export async function generateReview(diff: any): Promise<FileReview> {
   const filePath = diff.new_path || diff.old_path;
   const diffContent = diff.diff;
 
-  const prompt = `You are a senior software engineer reviewing code changes. 
-
+  // The system instruction sets the persona for the model.
+  const systemPrompt = `You are a senior software engineer reviewing code changes. 
+  
 Analyze this diff for file: ${filePath}
 
 ${diffContent}
@@ -32,32 +38,64 @@ Please review for:
 3. Performance issues
 4. Code quality and best practices
 5. Missing error handling
-
-Respond in JSON format with this structure:
-{
-  "hasIssues": boolean,
-  "summary": "Brief summary of the review",
-  "issues": [
-    {
-      "line": number (approximate line number if identifiable),
-      "severity": "info|warning|error",
-      "message": "Description of the issue"
-    }
-  ]
-}
-
-If no issues are found, set hasIssues to false and provide an empty issues array.`;
+  `;
 
   console.log(`Reviewing file: ${filePath}`);
 
+  // The API key is left as an empty string. The environment will provide this.
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+  // This is the schema we expect the model to return. This is crucial for getting a
+  // reliable JSON response.
+  const responseSchema = {
+    type: "OBJECT",
+    properties: {
+      "hasIssues": { "type": "BOOLEAN" },
+      "summary": { "type": "STRING" },
+      "issues": {
+        "type": "ARRAY",
+        "items": {
+          "type": "OBJECT",
+          "properties": {
+            "line": { "type": "NUMBER" },
+            "severity": { "type": "STRING", "enum": ["info", "warning", "error"] },
+            "message": { "type": "STRING" }
+          }
+        }
+      }
+    },
+    "propertyOrdering": ["hasIssues", "summary", "issues"]
+  };
+
   try {
-    const res = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.3,
+    const payload = {
+      // The prompt is sent to the model as a user message.
+      contents: [{ parts: [{ text: systemPrompt }] }],
+      // This configuration tells the model to return a structured JSON object
+      // that adheres to the defined schema.
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: responseSchema,
+      },
+      // You can also add a system instruction to set the model's persona more formally.
+      systemInstruction: {
+        parts: [{ text: "You are a world-class code reviewer. Provide concise, actionable feedback." }]
+      }
+    };
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
 
-    const content = res.choices[0].message?.content;
+    if (!response.ok) {
+      throw new Error(`API call failed with status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const content = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
     if (!content) {
       return {
         filePath,
@@ -66,28 +104,21 @@ If no issues are found, set hasIssues to false and provide an empty issues array
       };
     }
 
-    try {
-      const cleanedContent = content.replace(/```json\n?|```/g, '').trim();
-      const parsed = JSON.parse(cleanedContent);
-      const lineComments: LineComment[] = parsed.issues?.map((issue: any) => ({
-        line: issue.line || 0,
-        comment: issue.message,
-        severity: issue.severity || 'info'
-      })) || [];
+    // The Gemini API returns the JSON as a string, so we need to parse it.
+    const parsed = JSON.parse(content);
 
-      return {
-        filePath,
-        hasIssues: parsed.hasIssues || false,
-        review: parsed.summary || "Code looks good!",
-        lineComments
-      };
-    } catch (parseError) {
-      return {
-        filePath,
-        hasIssues: content.toLowerCase().includes('issue') || content.toLowerCase().includes('bug') || content.toLowerCase().includes('problem'),
-        review: content
-      };
-    }
+    const lineComments: LineComment[] = parsed.issues?.map((issue: any) => ({
+      line: issue.line || 0,
+      comment: issue.message,
+      severity: issue.severity || 'info'
+    })) || [];
+
+    return {
+      filePath,
+      hasIssues: parsed.hasIssues || false,
+      review: parsed.summary || "Code looks good!",
+      lineComments
+    };
   } catch (error) {
     console.error(`Error reviewing ${filePath}:`, error);
     return {
