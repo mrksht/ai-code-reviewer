@@ -13,11 +13,12 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     return res.sendStatus(200);
 
   const diffUrl = issue.pull_request.diff_url;
+  const prTitle = issue.title;
   const diffRes = await axios.get(diffUrl, {
     headers: { Authorization: `token ${process.env.GITHUB_TOKEN}` },
   });
 
-  const review = await generateReview(diffRes.data);
+  const review = await generateReview(diffRes.data, prTitle);
 
   await axios.post(
     comment.url,
