@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import axios from "axios";
 import { generateReview, FileReview } from "../review/generateReview";
-import { createSummaryComment, formatReviewComment } from "../utils/commentUtils";
+import { createSummaryComment, formatReviewComment, validateMrTitle } from "../utils/commentUtils";
+
 
 export async function handleGitLabWebhook(req: Request, res: Response) {
   const body = req.body;
@@ -25,12 +26,18 @@ export async function handleGitLabWebhook(req: Request, res: Response) {
     const diffs = Array.isArray(diffRes.data) ? diffRes.data : [diffRes.data];
     const reviews: FileReview[] = [];
 
-    for (const diff of diffs) {
-      if (!diff.diff || !diff.diff.trim()) continue;
-      if (diff.new_path?.includes(".test") || diff.new_path?.includes(".spec")) continue;
 
-      const review = await generateReview(diff, mrTitle);
-      reviews.push(review);
+    const titleValidation = validateMrTitle(mrTitle);
+    if (titleValidation) {
+      reviews.push(titleValidation);
+    } else {
+      for (const diff of diffs) {
+        if (!diff.diff || !diff.diff.trim()) continue;
+        if (diff.new_path?.includes(".test") || diff.new_path?.includes(".spec")) continue;
+
+        const review = await generateReview(diff, mrTitle);
+        reviews.push(review);
+      }
     }
 
     const reviewsWithIssues = reviews.filter(review => review.hasIssues);

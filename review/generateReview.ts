@@ -14,27 +14,7 @@ export interface LineComment {
   severity: 'info' | 'warning' | 'error';
 }
 
-function validateMrTitle(title: string): FileReview | null {
-  const pattern = /^(feature|fix|chore)\[[A-Z]+-\d+\]: .+/;
-
-  if (!pattern.test(title)) {
-    return {
-      filePath: "MR Title",
-      hasIssues: true,
-      review: `Merge request title must follow this format: feature[JIRA-TICKET]: message.\nExample: feature[PROJ-123]: Add new authentication method.`,
-      lineComments: []
-    };
-  }
-
-  return null;
-}
-
 export async function generateReview(diff: any, mrTitle: string): Promise<FileReview> {
-  // First, validate the MR title
-  const titleValidation = validateMrTitle(mrTitle);
-  if (titleValidation) {
-    return titleValidation;
-  }
 
   const filePath = diff.new_path || diff.old_path;
   const diffContent = diff.diff;

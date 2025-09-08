@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import axios from "axios";
 import { generateReview } from "../review/generateReview";
 import dotenv from "dotenv";
+import { validateMrTitle } from "../utils/commentUtils";
 dotenv.config()
 
 export async function handleGitHubWebhook(req: Request, res: Response) {
@@ -18,7 +19,13 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     headers: { Authorization: `token ${process.env.GITHUB_TOKEN}` },
   });
 
-  const review = await generateReview(diffRes.data, prTitle);
+  const titleValidation = validateMrTitle(prTitle);
+  let review
+  if (titleValidation) {
+    review = titleValidation;
+  } else {
+    review = await generateReview(diffRes.data, prTitle);
+  }
 
   await axios.post(
     comment.url,

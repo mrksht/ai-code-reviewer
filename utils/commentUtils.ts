@@ -48,4 +48,19 @@ function createSummaryComment(reviewsWithIssues: FileReview[], totalFiles: numbe
   return comment;
 }
 
-export { formatReviewComment, createSummaryComment };
+function validateMrTitle(title: string): FileReview | null {
+  const pattern = /^(feature|fix|chore)\[[A-Z]+-\d+\]: .+/;
+
+  if (!pattern.test(title)) {
+    return {
+      filePath: "MR Title",
+      hasIssues: true,
+      review: `Merge request title must follow this format: feature[JIRA-TICKET]: message.\nExample: feature[PROJ-123]: Add new authentication method.`,
+      lineComments: []
+    };
+  }
+
+  return null;
+}
+
+export { formatReviewComment, createSummaryComment, validateMrTitle };
