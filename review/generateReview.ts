@@ -12,6 +12,7 @@ export interface LineComment {
   line: number;
   comment: string;
   severity: 'info' | 'warning' | 'error';
+  suggestion?: string; // <-- new field
 }
 
 export async function generateReview(diff: any, mrTitle: string): Promise<FileReview> {
@@ -32,6 +33,12 @@ Please review for:
 3. Performance issues
 4. Code quality and best practices
 5. Missing error handling
+
+For each issue, provide:
+- Line number
+- Severity ("info", "warning", "error")
+- Description of the problem
+- If possible, a suggested code snippet to improve/fix it
 `;
 
   console.log(`Reviewing file: ${filePath}`);
@@ -50,7 +57,8 @@ Please review for:
           "properties": {
             "line": { "type": "NUMBER" },
             "severity": { "type": "STRING", "enum": ["info", "warning", "error"] },
-            "message": { "type": "STRING" }
+            "message": { "type": "STRING" },
+            "suggestion": { "type": "STRING" } // <-- allow suggestions
           }
         }
       }
@@ -65,7 +73,7 @@ Please review for:
       responseSchema: responseSchema
     },
     systemInstruction: {
-      parts: [{ text: "You are a world-class code reviewer. Provide concise, actionable feedback." }]
+      parts: [{ text: "You are a world-class code reviewer. Provide concise, actionable feedback, and whenever possible include a suggested code snippet for fixes or improvements." }]
     }
   };
 
@@ -96,7 +104,8 @@ Please review for:
     const lineComments: LineComment[] = parsed.issues?.map((issue: any) => ({
       line: issue.line || 0,
       comment: issue.message,
-      severity: issue.severity || 'info'
+      severity: issue.severity || 'info',
+      suggestion: issue.suggestion || undefined
     })) || [];
 
     return {
