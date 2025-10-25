@@ -44,7 +44,7 @@ export async function handleGitLabWebhook(req: Request, res: Response) {
 
     if (reviewsWithIssues.length === 0) {
       await axios.post(notesUrl, {
-        body: "🤖 **Automated Code Review**\n\n✅ All files look good! No issues detected."
+        body: "**Automated Code Review**\n\n All files look good! No issues detected."
       }, {
         headers: { "PRIVATE-TOKEN": process.env.GITLAB_TOKEN }
       });
@@ -75,7 +75,7 @@ export async function handleGitLabWebhook(req: Request, res: Response) {
 
     try {
       await axios.post(notesUrl, {
-        body: "🤖 **Automated Code Review**\n\n❌ Error occurred during code review. Please check the logs."
+        body: "**Automated Code Review**\n\n Error occurred during code review. Please check the logs."
       }, {
         headers: { "PRIVATE-TOKEN": process.env.GITLAB_TOKEN }
       });

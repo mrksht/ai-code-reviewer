@@ -12,7 +12,7 @@ export interface LineComment {
   line: number;
   comment: string;
   severity: 'info' | 'warning' | 'error';
-  suggestion?: string; // <-- new field
+  suggestion?: string;
 }
 
 export async function generateReview(diff: any, mrTitle: string): Promise<FileReview> {
@@ -58,7 +58,7 @@ For each issue, provide:
             "line": { "type": "NUMBER" },
             "severity": { "type": "STRING", "enum": ["info", "warning", "error"] },
             "message": { "type": "STRING" },
-            "suggestion": { "type": "STRING" } // <-- allow suggestions
+            "suggestion": { "type": "STRING" }
           }
         }
       }
